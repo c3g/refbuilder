@@ -73,6 +73,7 @@ process IndexAnnotation {
 process MakeGenomeModulefile {
     publishDir path: { "${params.basedir}/modules/genomes/${params.species}/NCBI/${params.assembly}" }, mode: params.publish_dir_mode
     executor 'local'
+    cache false
 
     input:
     val(fasta_path)
