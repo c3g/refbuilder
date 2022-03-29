@@ -1,0 +1,30 @@
+help([==[
+
+Description
+===========
+NCBI genome sequence and indices for ${params.species.replaceAll(/_/,' ')}.
+
+Genome source: ${fasta_path}
+
+More information
+================
+
+Files produced by the genomes pipeline: ${workflow.repository} - ${workflow.revision} [${workflow.commitId}]
+Manifest's pipeline version: ${workflow.manifest.version}
+
+Reproducible on Compute Canada using command
+
+${workflow.commandLine}
+]==])
+
+whatis([==[Description: NCBI databases for BLAST searches]==])
+whatis([==[Species: ${params.species.replaceAll(/_/,' ')}]==])
+whatis([==[URL: ${fasta_path}]==])
+
+local root = "${params.repo_basedir}/genomes/${params.species}/NCBI/${params.assembly}/${params.analysis_set}"
+
+setenv("BIOREPO_GENOMEBASE", "${params.repo_basedir}/databases/genomes/${params.species}/NCBI/${params.assembly}/${params.analysis_set}/genome.fasta")
+
+if mode() == "load" then
+io.stderr:write([==[BIOREPO_GENOMEBASE variable is set. Indices are available at \$BIOREPO_GENOMEBASE/indices]==])
+end
