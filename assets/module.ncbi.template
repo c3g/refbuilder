@@ -6,25 +6,33 @@ NCBI genome sequence and indices for ${params.species.replaceAll(/_/,' ')}.
 
 Genome source: ${fasta_path}
 
-More information
-================
+Reproducibility
+===============
+This data was generated with command:
 
-Files produced by the genomes pipeline: ${workflow.repository} - ${workflow.revision} [${workflow.commitId}]
-Manifest's pipeline version: ${workflow.manifest.version}
+\$ ${workflow.commandLine - ~/-resume ?/ - ~/--basedir \S+ ?/}
 
-Reproducible on Compute Canada using command
+Workflow name:     ${workflow.repository}
+Workflow revision: ${workflow.revision}
+Workflow commit:   ${workflow.commitId}
+Workflow source:   ${workflow.manifest.homePage}/commit/${workflow.commitId}
 
-${workflow.commandLine}
+Pipeline version:  ${workflow.manifest.version}
+Pipeline author:   ${workflow.manifest.author}
+
 ]==])
 
-whatis([==[Description: NCBI databases for BLAST searches]==])
-whatis([==[Species: ${params.species.replaceAll(/_/,' ')}]==])
-whatis([==[URL: ${fasta_path}]==])
+whatis([ ==[ Description: NCBI databases for BLAST searches ]==])
+whatis([ ==[ Assembly: ${params.assembly} ]==])
+whatis([ ==[ Assembly type: ${params.analysis_set} ]==])
+whatis([ ==[ Species: ${params.species.replaceAll(/_/,' ')} ]==])
+whatis([ ==[ Genome source: ${fasta_path} ]==])
+whatis([ ==[ Homepage: https://www.ncbi.nlm.nih.gov/genome/?term=${params.assembly} ]==])
 
-local root = "${params.repo_basedir}/genomes/${params.species}/NCBI/${params.assembly}/${params.analysis_set}"
-
-setenv("BIOREPO_GENOMEBASE", "${params.repo_basedir}/databases/genomes/${params.species}/NCBI/${params.assembly}/${params.analysis_set}/genome.fasta")
+setenv("BIOREPO_GENOMEBASE", "${root_path}")
 
 if mode() == "load" then
-io.stderr:write([==[BIOREPO_GENOMEBASE variable is set. Indices are available at \$BIOREPO_GENOMEBASE/indices]==])
+io.stderr:write([==[
+    BIOREPO_GENOMEBASE variable is set. Indices are available at \$BIOREPO_GENOMEBASE/indices]
+==])
 end

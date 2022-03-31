@@ -3,7 +3,8 @@ import groovy.text.SimpleTemplateEngine
 params.species = "Homo_sapiens"
 params.assembly = null
 params.analysis_set = "base"
-params.publish_basedir = "${params.basedir}/genomes/${params.species}/NCBI/${params.assembly}/${params.analysis_set}"
+params.publish_basedir = "${params.basedir}/genomes/Core/${params.species.toLowerCase()}/ncbi/${params.assembly.toLowerCase()}/${params.analysis_set.toLowerCase()}"
+params.modules_basedir = "${params.basedir}/modules/Core/${params.species.toLowerCase()}/ncbi/${params.assembly.toLowerCase()}/${params.analysis_set.toLowerCase()}"
 params.latest = false
 params.fasta = null
 params.gff = null
@@ -71,7 +72,7 @@ process IndexAnnotation {
 }
 
 process MakeGenomeModulefile {
-    publishDir path: { "${params.basedir}/modules/genomes/${params.species}/NCBI/${params.assembly}" }, mode: params.publish_dir_mode
+    publishDir path: { params.modules_basedir }, mode: params.publish_dir_mode
     executor 'local'
     cache false
 
@@ -82,17 +83,18 @@ process MakeGenomeModulefile {
     file("${params.analysis_set}.lua")
 
     exec:
+    def cmd_trimmed = workflow.commandLine
     def binding = [
-        fasta_path : fasta_path,
-        params     : params,
-        workflow   : workflow
+        fasta_path  : fasta_path,
+        params      : params,
+        workflow    : workflow,
+        root_path   : "${params.cvmfs_root}/${params.species.toLowerCase()}/ncbi/${params.assembly.toLowerCase()}/${params.analysis_set.toLowerCase()}"
     ]
 
     def engine = new groovy.text.SimpleTemplateEngine()
     def raw = file("${baseDir}/assets/module.ncbi.template")
     def template = engine.createTemplate(raw.text).make(binding)
     def modulefile = new File("${task.workDir}/${params.analysis_set}.lua")
-    log.info "Creating file '${task.workDir}/${params.analysis_set}.lua'"
     modulefile.text = template.toString()
 }
 
@@ -102,24 +104,28 @@ workflow ImportGenome {
     fasta_path      = params.fasta           ?: findRefseqFasta(params.species, params.assembly)
     assembly_report = params.assembly_report ?: findAssemblyReport(params.species, params.assembly)
 
+    def exitEarly = false
+
     if (!fasta_path) {
         log.warn "Could not find refseq path for NCBI genome ${params.species} ${params.assembly} (${params.analysis_set})"
-        return
+        exitEarly = true
     }
 
     if (!gff_path) {
         log.warn "Could not find refseq gff annotations for NCBI genome ${params.species} ${params.assembly} (${params.analysis_set})"
-        return
+        exitEarly = true
     }
 
     if (!gtf_path) {
         log.warn "Could not find refseq gtf annotations for NCBI genome ${params.species} ${params.assembly} (${params.analysis_set})"
-        return
+        exitEarly = true
     }
 
     if (!assembly_report) {
         log.warn "Could not find assembly report for NCBI genome ${params.species} ${params.assembly} (${params.analysis_set})"
     }
+
+    if (exitEarly) { return }
 
     // Channel.from([[gff_path, "gff"], [gtf_path, "gtf"]]) | IndexAnnotation
     MakeGenomeModulefile(fasta_path)
@@ -129,8 +135,6 @@ workflow ImportGenome {
     GunzipIndexFasta.out.fasta | IndexBowtie
     GunzipIndexFasta.out.fasta | CreateSequenceDictionary
     // // GunzipIndexFasta.out.fasta | IndexBismark
-
-    // GunzipIndexFasta.out.versions
 }
 
 String getPreamble(input) {
